@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - DB_NAME=talon
+      - DB_USER=talon
+      - DB_PASSWORD=talon.one.8080
+      - DB_HOST=db
+      - DB_PORT=5432
+    command: bash -c 'while ! </dev/tcp/db/5432; do sleep 2; done; ./talon-backend-assignment'
+
+  db:
+    image: postgres:11
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=talon
+      - POSTGRES_PASSWORD=talon.one.8080
+      - POSTGRES_DB=talon
