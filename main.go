@@ -27,6 +27,7 @@ func main() {
 	}
 
 	access_logger.Init()
+	// TODO Good to create a number of workers inside
 	go access_logger.Run(logger)
 
 	address := ":8080"

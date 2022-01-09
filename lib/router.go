@@ -99,6 +99,8 @@ func contextify(h func(ctx *rqctx.Context) error) func(w http.ResponseWriter, r 
 			ws.Status, ws.ResponseBody, ctx.UUID,
 		)
 
+		// TODO this routine could be finished before it send anything in channel
+		// I guess here we should use sync.WaitGroup, or maybe get rid of goroutine and make it sync
 		go func() {
 			access_logger.AccessLogChan <- access_logger.ResponseLogData{
 				UUID: ctx.UUID,

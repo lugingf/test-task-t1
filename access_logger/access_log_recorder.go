@@ -44,6 +44,7 @@ func (r ResponseLogData) GetBody() string {
 }
 
 func Init() {
+	// TODO buffer should
 	AccessLogChan = make(chan LogData, 100)
 }
 
@@ -56,6 +57,7 @@ func Run(logger *zap.Logger) {
 		case RequestLogData:
 			err := dataContext.AccessLog.InsertRequest(msg.GetBody())
 			if err != nil {
+				// TODO Not sure we have to do it
 				rollback(msgUuid, dataContext)
 				logger.Fatal("InsertRequest failed", zap.Error(err))
 			}
@@ -63,6 +65,7 @@ func Run(logger *zap.Logger) {
 		case ResponseLogData:
 			err := dataContext.AccessLog.InsertResponse(msg.GetBody())
 			if err != nil {
+				// TODO Not sure we have to do it
 				rollback(msgUuid, dataContext)
 				logger.Fatal("InsertRequest failed", zap.Error(err))
 			}
@@ -91,6 +94,7 @@ func commitOrSave(uuid uuid.UUID, dataContext *dat.Context) {
 		dataContext.Commit()
 		RequestResponseMap.Delete(uuid)
 	} else {
+		// TODO Think about to add TTL for transaction
 		RequestResponseMap.Store(uuid, dataContext)
 	}
 }
