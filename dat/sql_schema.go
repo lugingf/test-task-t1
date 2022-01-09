@@ -31,5 +31,35 @@ func GetSchemaSQL() string {
 	  INSERT INTO migrations (name) VALUES (migration_name);
 	  END 
 	  $$;
+
+	  DO $$
+	  DECLARE
+		  migration_name text := 'access_log';
+	  BEGIN
+		  IF EXISTS (
+			  SELECT
+				  1
+			  FROM
+				  migrations
+			  WHERE
+				  name = migration_name) THEN
+		  RETURN;
+	  END IF;
+
+	  CREATE TABLE request_logs (
+		id SERIAL PRIMARY KEY,
+		created timestamp with time zone DEFAULT now( ) NOT NULL,
+		body text NOT NULL
+	  );
+
+	  CREATE TABLE response_logs (
+		id SERIAL PRIMARY KEY,
+		created timestamp with time zone DEFAULT now( ) NOT NULL,
+		body text NOT NULL
+	  );
+
+	  INSERT INTO migrations (name) VALUES (migration_name);
+	  END 
+	  $$;
 	`
 }

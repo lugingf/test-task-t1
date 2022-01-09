@@ -1,17 +1,22 @@
 package lib
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/gorilla/mux"
+	"github.com/talon-one/assignment-props/access_logger"
 	"github.com/talon-one/assignment-props/logger"
 	"github.com/talon-one/assignment-props/rqctx"
 
 	"go.uber.org/zap"
 )
+
+
 
 // NewRouter returns a new instance of router
 func NewRouter() http.Handler {
@@ -28,11 +33,33 @@ func NewRouter() http.Handler {
 
 func contextify(h func(ctx *rqctx.Context) error) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := rqctx.NewContext(w, r, logger.DefaultLogger)
+		ws := &access_logger.StatusRecorder{
+			ResponseWriter: w,
+			Status:         200,
+		}
+		dLogger := logger.DefaultLogger
+		request, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			dLogger.Error("http_logger: read request body", zap.Error(err))
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(request))
+
+		ctx := rqctx.NewContext(ws, r, dLogger)
+
+		logRequestMsg := fmt.Sprintf(
+			"%v Request URI: %v Body: %v Agent: %v UUID: %v" ,
+			r.Method, r.URL.String(), string(request), r.UserAgent(), ctx.UUID)
+
+		go func() {
+			access_logger.AccessLogChan <- access_logger.RequestLogData{
+				UUID: ctx.UUID,
+				Body: logRequestMsg,
+			}
+		}()
 
 		// open DB or log, fail and return
 		mainCtx := context.Background()
-		err := ctx.OpenDB(mainCtx)
+		err = ctx.OpenDB(mainCtx)
 		if err != nil {
 			ctx.Logger.Error("failed to open DB", zap.Error(err))
 			marshalAndWrite(ctx.Writer, "Internal server error", http.StatusInternalServerError)
@@ -67,6 +94,17 @@ func contextify(h func(ctx *rqctx.Context) error) func(w http.ResponseWriter, r 
 				ctx.Logger.Info("OK", zap.String("uuid", ctx.UUID.String()))
 			}
 		}
+		logResponseMsg := fmt.Sprintf(
+			"Response %d Body: %v UUID: %v",
+			ws.Status, ws.ResponseBody, ctx.UUID,
+		)
+
+		go func() {
+			access_logger.AccessLogChan <- access_logger.ResponseLogData{
+				UUID: ctx.UUID,
+				Body: logResponseMsg,
+			}
+		}()
 	}
 }
 

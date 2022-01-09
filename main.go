@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/talon-one/assignment-props/access_logger"
 	"net/http"
 
 	"github.com/talon-one/assignment-props/dat"
@@ -24,6 +25,9 @@ func main() {
 	if err != nil {
 		logger.Fatal("failed to execute SQL schema", zap.Error(err))
 	}
+
+	access_logger.Init()
+	go access_logger.Run(logger)
 
 	address := ":8080"
 	server := http.Server{

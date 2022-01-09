@@ -13,6 +13,7 @@ type Context struct {
 	ctx         context.Context
 	db          pgx.Tx
 	RequestBody *RequestBodyMapper
+	AccessLog   *AccessLogMapper
 }
 
 //NewDataContext creates a transaction and uses it to provide accessors to all DB entities
@@ -30,6 +31,7 @@ func NewDataContext(mainCtx context.Context) (*Context, error) {
 		ctx:         mainCtx,
 		db:          txn,
 		RequestBody: NewRequestBodyMapper(mainCtx, txn),
+		AccessLog:   NewAccessLogMapper(mainCtx, txn),
 	}, nil
 }
 
